@@ -46,6 +46,20 @@ char board[3][3];  // 3×3棋盘
 char currentPlayer; // 当前玩家
 int gameMode;      // 游戏模式：1-人机对战，2-双人对战
 
+// 数字键盘映射到棋盘位置
+const int keypadMapping[10][2] = {
+        {0, 0},  // 占位，不使用
+        {2, 0},  // 1 -> 左下
+        {2, 1},  // 2 -> 下中
+        {2, 2},  // 3 -> 右下
+        {1, 0},  // 4 -> 中左
+        {1, 1},  // 5 -> 中心
+        {1, 2},  // 6 -> 中右
+        {0, 0},  // 7 -> 左上
+        {0, 1},  // 8 -> 上中
+        {0, 2}   // 9 -> 右上
+};
+
 // 函数声明
 void clearScreen();
 void showSplashScreen();
@@ -53,6 +67,7 @@ void showGameMenu();
 void initializeBoard();
 void displayBoard();
 void displayGameInfo();
+void playerMove(); // 新增：玩家落子函数
 int checkWinSimulation();
 int makeMove(int row, int column);
 int checkWin();
@@ -67,7 +82,6 @@ int playAgain();
 
 int main() {
     setConsoleUTF8();
-    int row, column;
     int gameStatus = 0;  // 0:继续游戏, 1:有玩家获胜, 2:平局
     int playAgainChoice = 1;
 
@@ -96,28 +110,16 @@ int main() {
             displayGameInfo();
 
             if (currentPlayer == 'X' || gameMode == 2) {
-                // 玩家回合
-                printf(BOLD "玩家 %c 请输入落子位置 (行 列，0-2): " RESET, currentPlayer);
-                scanf("%d %d", &row, &column);
+                // 玩家回合，使用新的落子函数
+                playerMove();
 
-                // 检查输入是否有效并尝试落子
-                if (row >= 0 && row < 3 && column >= 0 && column < 3) {
-                    if (makeMove(row, column)) {
-                        // 检查游戏状态
-                        if (checkWin()) {
-                            gameStatus = 1; // 胜利
-                        } else if (isBoardFull()) {
-                            gameStatus = 2; // 平局
-                        } else {
-                            changePlayer(); // 切换玩家
-                        }
-                    } else {
-                        printf(RED "\n该位置已被占用，请重新选择！\n" RESET);
-                        sleep(1); // 暂停一秒
-                    }
+                // 检查游戏状态
+                if (checkWin()) {
+                    gameStatus = 1; // 胜利
+                } else if (isBoardFull()) {
+                    gameStatus = 2; // 平局
                 } else {
-                    printf(RED "\n无效的输入，请输入0-2之间的数字！\n" RESET);
-                    sleep(1); // 暂停一秒
+                    changePlayer(); // 切换玩家
                 }
             } else {
                 // 电脑回合
@@ -148,6 +150,39 @@ int main() {
     printf(BOLD YELLOW "\n感谢您游玩井字棋！再见！\n\n" RESET);
 
     return 0;
+}
+
+// 玩家落子函数
+void playerMove() {
+    int position;
+    int valid = 0;
+
+    while (!valid) {
+        printf(BOLD "玩家 %c 请输入落子位置 (1-9): " RESET, currentPlayer);
+        scanf("%d", &position);
+
+        if (position >= 1 && position <= 9) {
+            int row = keypadMapping[position][0];
+            int col = keypadMapping[position][1];
+
+            if (board[row][col] == ' ') {
+                board[row][col] = currentPlayer;
+                valid = 1;
+            } else {
+                printf(RED "\n该位置已被占用，请重新选择！\n" RESET);
+                sleep(1);
+                clearScreen();
+                displayBoard();
+                displayGameInfo();
+            }
+        } else {
+            printf(RED "\n无效的输入，请输入1-9之间的数字！\n" RESET);
+            sleep(1);
+            clearScreen();
+            displayBoard();
+            displayGameInfo();
+        }
+    }
 }
 
 // 清屏函数
@@ -202,25 +237,42 @@ void initializeBoard() {
     }
 }
 
-// 显示棋盘
+// 显示棋盘（修改版，显示数字键盘映射）
 void displayBoard() {
     printf(BOLD YELLOW "\n      井字棋游戏\n\n" RESET);
-    printf("    0   1   2  \n");
+
+//    // 添加数字键盘映射指引
+//    printf(CYAN "数字键映射:\n");
+//    printf("7 | 8 | 9\n");
+//    printf("─────────\n");
+//    printf("4 | 5 | 6\n");
+//    printf("─────────\n");
+//    printf("1 | 2 | 3\n" RESET);
+//    printf("\n");
+
     printf("  ┌───┬───┬───┐\n");
 
     for (int i = 0; i < 3; i++) {
-        printf("%d │", i);
+        printf("  │");
         for (int j = 0; j < 3; j++) {
             if (board[i][j] == 'X') {
                 printf(BOLD RED " X " RESET);
             } else if (board[i][j] == 'O') {
                 printf(BOLD BLUE " O " RESET);
             } else {
-                printf("   ");
+                // 显示空位置对应的数字提示
+                int num = 0;
+                for (int k = 1; k <= 9; k++) {
+                    if (keypadMapping[k][0] == i && keypadMapping[k][1] == j) {
+                        num = k;
+                        break;
+                    }
+                }
+                printf(CYAN " %d " RESET, num);
             }
-            if (j < 2) printf("│");
+            printf("│");
         }
-        printf("│\n");
+        printf("\n");
 
         if (i < 2) {
             printf("  ├───┼───┼───┤\n");
@@ -443,7 +495,6 @@ int findWinningMove(char player) {
 }
 
 // 查找需要阻止对手获胜的位置
-// 修改findBlockingMove函数
 int findBlockingMove() {
     char opponent = (currentPlayer == 'X') ? 'O' : 'X';
 
@@ -545,3 +596,4 @@ int checkWinSimulation() {
 
     return 0;
 }
+
