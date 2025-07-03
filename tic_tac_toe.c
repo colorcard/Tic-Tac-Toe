@@ -1,7 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>  // 用于sleep函数
+#ifdef _WIN32
+// Windows 平台特定头文件
+    #include <windows.h>
+    // 定义 sleep 函数兼容性
+    #define sleep(x) Sleep((x) * 1000)
+    // 如果有其他 unistd.h 函数，在这里添加对应的 Windows 实现
+#else
+// UNIX/Linux/macOS 平台头文件
+#include <unistd.h>
+#endif
+// 其余代码保持不变
 
 // ANSI颜色代码
 #define RESET   "\033[0m"

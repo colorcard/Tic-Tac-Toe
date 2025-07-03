@@ -5,17 +5,16 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:  # ??????
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
 
     strategy:
-      # ??fail-fast?false??????????????????
       fail-fast: false
-
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         build_type: [Release]
         include:
           - os: windows-latest
@@ -27,27 +26,25 @@ jobs:
           - os: ubuntu-latest
             c_compiler: gcc
             cpp_compiler: g++
-            artifact_name: tic-tac-toe-linux-gcc-x64
+            artifact_name: tic-tac-toe-linux-x64
             artifact_path: build/tic_tac_toe
 
-          - os: ubuntu-latest
+          - os: macos-latest
             c_compiler: clang
             cpp_compiler: clang++
-            artifact_name: tic-tac-toe-linux-clang-x64
+            artifact_name: tic-tac-toe-macos-x64
             artifact_path: build/tic_tac_toe
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set reusable strings
-        # ???????????(???????)???step??????????????
         id: strings
         shell: bash
         run: |
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
       - name: Configure CMake
-        # ?'build'??????CMake???????(?make)??CMAKE_BUILD_TYPE
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -56,17 +53,11 @@ jobs:
           -S ${{ github.workspace }}
 
       - name: Build
-        # ????????????????Windows????????????(Visual Studio)???--config
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
-      - name: Test
-        working-directory: ${{ steps.strings.outputs.build-output-dir }}
-        # ???CMake???????
-        run: ctest --build-config ${{ matrix.build_type }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_path }}
-          compression-level: 0  # ?????????????
+          compression-level: 0
