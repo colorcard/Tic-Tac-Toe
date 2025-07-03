@@ -546,7 +546,7 @@ void showEndGame(int gameStatus) {
         printf(BOLD GREEN "\n游戏平局！棋逢对手！\n" RESET);
         printf(YELLOW "┌───────────────────────────┐\n");
         printf("│                           │\n");
-        printf("│        🤝 平局 🤝        │\n");
+        printf("│        🤝 平局 🤝         │\n");
         printf("│                           │\n");
         printf("└───────────────────────────┘\n" RESET);
     }
