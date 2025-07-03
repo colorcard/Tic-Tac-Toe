@@ -1,15 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+
 #ifdef _WIN32
-// Windows 平台特定头文件
-    #include <windows.h>
-    // 定义 sleep 函数兼容性
+#include <windows.h>
+    // Windows 平台特定函数定义
     #define sleep(x) Sleep((x) * 1000)
-    // 如果有其他 unistd.h 函数，在这里添加对应的 Windows 实现
+
+    // 设置控制台为 UTF-8 编码
+    void setConsoleUTF8() {
+        SetConsoleOutputCP(CP_UTF8);
+        SetConsoleCP(CP_UTF8);
+    }
 #else
-// UNIX/Linux/macOS 平台头文件
 #include <unistd.h>
+// 空函数，Unix 平台不需要特别设置
+void setConsoleUTF8() {}
 #endif
 // 其余代码保持不变
 
@@ -60,6 +66,7 @@ void showEndGame(int gameStatus);
 int playAgain();
 
 int main() {
+    setConsoleUTF8();
     int row, column;
     int gameStatus = 0;  // 0:继续游戏, 1:有玩家获胜, 2:平局
     int playAgainChoice = 1;
