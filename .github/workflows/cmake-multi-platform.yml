@@ -1,0 +1,55 @@
+name: Build Tic-Tac-Toe Game
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+  workflow_dispatch:  # ??????
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+        include:
+          - os: windows-latest
+            c_compiler: cl
+            artifact_name: tic-tac-toe-windows-x64
+            artifact_path: build/Release/tic_tac_toe.exe
+          - os: ubuntu-latest
+            c_compiler: gcc
+            artifact_name: tic-tac-toe-linux-x64
+            artifact_path: build/tic_tac_toe
+          - os: macos-latest
+            c_compiler: clang
+            artifact_name: tic-tac-toe-macos-x64
+            artifact_path: build/tic_tac_toe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set reusable strings
+        id: strings
+        shell: bash
+        run: |
+          echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+      - name: Configure CMake
+        run: >
+          cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_BUILD_TYPE=Release
+          -S ${{ github.workspace }}
+
+      - name: Build
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
