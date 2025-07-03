@@ -14,20 +14,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        build_type: [Release]
         include:
           - os: windows-latest
             c_compiler: cl
+            cpp_compiler: cl
             artifact_name: tic-tac-toe-windows-x64
             artifact_path: build/Release/tic_tac_toe.exe
           - os: ubuntu-latest
             c_compiler: gcc
+            cpp_compiler: g++
             artifact_name: tic-tac-toe-linux-x64
             artifact_path: build/tic_tac_toe
           - os: macos-latest
             c_compiler: clang
+            cpp_compiler: clang++
             artifact_name: tic-tac-toe-macos-x64
             artifact_path: build/tic_tac_toe
+        exclude:
+          - os: windows-latest
+            c_compiler: gcc
+          - os: windows-latest
+            c_compiler: clang
+          - os: ubuntu-latest
+            c_compiler: cl
+          - os: macos-latest
+            c_compiler: gcc
+          - os: macos-latest
+            c_compiler: cl
 
     steps:
       - uses: actions/checkout@v4
@@ -41,15 +56,17 @@ jobs:
       - name: Configure CMake
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -S ${{ github.workspace }}
 
       - name: Build
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config Release
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # ???????artifact????
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_path }}
+          compression-level: 0  # ?????????????
